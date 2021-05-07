@@ -19,5 +19,7 @@ case class AutoHermodConfig(
                            token : String,
                            channel : String,
                            selfID : String,
+                           digitsImagesPath : String,
+                           iconsImagesPath : String,
                            googleCredentialsPath : String
                            )

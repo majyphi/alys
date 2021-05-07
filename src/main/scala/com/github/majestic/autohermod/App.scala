@@ -8,7 +8,6 @@ object App {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-
   def main(args: Array[String]): Unit = {
 
     val config: AutoHermodConfig = Configuration.getAutoHermodConfig(args(0))
@@ -18,6 +17,5 @@ object App {
     DiscordHandler(config).runWith(messageProcessing)
 
   }
-
 
 }

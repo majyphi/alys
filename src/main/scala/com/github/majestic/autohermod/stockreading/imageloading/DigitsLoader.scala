@@ -6,13 +6,12 @@ import org.opencv.imgcodecs.Imgcodecs
 
 object DigitsLoader {
 
-  private val iconsPath = "src/main/resources/images/digits/"
 
-  def getDigits() : List[Digit] = {
-    FileUtils.getListOfFilesIn(iconsPath)
+  def getDigits(digitsPath : String) : List[Digit] = {
+    FileUtils.getListOfFilesIn(digitsPath)
       .map(file => {
         val filename = file.getName
-        val img = Imgcodecs.imread(iconsPath+filename,Imgcodecs.IMREAD_GRAYSCALE)
+        val img = Imgcodecs.imread(digitsPath+filename,Imgcodecs.IMREAD_GRAYSCALE)
         Digit(
           name = filename.replaceAll(".png","")
             .replaceAll("digit_",""),

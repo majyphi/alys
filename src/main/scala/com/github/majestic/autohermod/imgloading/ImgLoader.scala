@@ -18,6 +18,8 @@ case class ImgLoader() {
   def loadImageFromUrl(url: String): Try[Mat] = {
     val imageUrl = new URL(url)
 
+    imageUrl.openConnection().connect()
+
     for {
       httpcon <- prepareConnection(imageUrl)
       buffer <- Try(ImageIO.read(httpcon.getInputStream))
@@ -31,7 +33,8 @@ case class ImgLoader() {
       val byteArrayOutputStream = new ByteArrayOutputStream()
       ImageIO.write(image, format, byteArrayOutputStream)
       byteArrayOutputStream.flush()
-      Imgcodecs.imdecode(new MatOfByte(byteArrayOutputStream.toByteArray: _*), Imgcodecs.IMREAD_GRAYSCALE)
+      val matOfByte = new MatOfByte(byteArrayOutputStream.toByteArray:_*)
+      Imgcodecs.imdecode(matOfByte, Imgcodecs.IMREAD_GRAYSCALE)
     }
   }
 

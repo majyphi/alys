@@ -1,5 +1,6 @@
 package com.github.majestic.autohermod.stockreading
 
+import com.github.majestic.autohermod.AutoHermodConfig
 import com.github.majestic.autohermod.stockreading.imageloading.{Digit, DigitsLoader, Icon, IconsLoader}
 import com.github.majestic.autohermod.stockreading.matching.{DigitsLocator, ItemLocator}
 import nu.pattern.OpenCV
@@ -35,10 +36,10 @@ case class StockReader(digits: List[Digit], icons: List[Icon]) {
 
 object StockReader {
 
-  def apply(): StockReader = {
+  def apply(config : AutoHermodConfig): StockReader = {
     OpenCV.loadLocally()
-    val digits = DigitsLoader.getDigits()
-    val icons = IconsLoader.getIcons()
+    val digits = DigitsLoader.getDigits(config.digitsImagesPath)
+    val icons = IconsLoader.getIcons(config.iconsImagesPath)
     StockReader(digits, icons)
   }
 

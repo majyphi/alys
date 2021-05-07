@@ -4,21 +4,20 @@ import ackcord.data.Attachment
 import com.github.majestic.autohermod.googlesheet.SheetHandler
 import com.github.majestic.autohermod.imgloading.ImgLoader
 import com.github.majestic.autohermod.stockreading.StockReader
-import com.github.majestic.autohermod.stockreading.model.ItemStock
+import com.github.majestic.autohermod.model.ItemStock
 
 import scala.util.{Failure, Success, Try}
 
 object ItemStocksProcessing {
 
-  def readStocksAndSendToSheet(attachment: Attachment)(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler): Try[Unit] = {
+  def readStocksAndSendToSheet(attachment: Attachment, sheetName : String)(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler): Try[Unit] = {
     for {
       img <- imgLoader.loadImageFromUrl(attachment.url)
       stocks = stockReader.extractStocksFromImage(img)
-      refList <- sheetHandler.requestItemList()
+      refList <- sheetHandler.requestItemList(sheetName)
       stocksToExport <- mergeLists(stocks, refList)
-      result <- sheetHandler.writeStocks(stocksToExport)
+      result <- sheetHandler.writeStocks(stocksToExport,sheetName)
     } yield result
-
 
   }
 
@@ -29,8 +28,8 @@ object ItemStocksProcessing {
       case seq => Success {
         val stocksMap = seq.map(item => (item.name, item.quantity)).toMap
         refList.map(name => {
-          val value =  stocksMap.getOrElse(name, 0)
-          ItemStock(name,value)
+          val value = stocksMap.getOrElse(name, 0)
+          ItemStock(name, value)
         })
       }
     }
@@ -40,21 +39,13 @@ object ItemStocksProcessing {
     for {
       img <- imgLoader.loadImageFromUrl(attachment.url)
       stocks = stockReader.extractStocksFromImage(img)
-      result <- formatAnswer(stocks)
+      result = formatAnswer(stocks)
     } yield result
   }
 
-  def formatAnswer(stocks: Seq[Try[ItemStock]]): Try[String] = {
+  def formatAnswer(stocks: Seq[Try[ItemStock]]): String = {
     val foundStocks = stocks.filter(_.isSuccess).map(_.get)
-    foundStocks match {
-      case Seq() => Failure(new Exception("No Stock found ¯\\_(ツ)_/¯"))
-      case seq => Success(
-        seq
-          .map(item => {
-            s"${item.name}\t${item.quantity}"
-          }).mkString("```", "\n", "```")
-      )
-    }
+    ItemStock.formatStocks(foundStocks.toList)
   }
 
 }

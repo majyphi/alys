@@ -6,9 +6,8 @@ import org.opencv.imgcodecs.Imgcodecs
 
 object IconsLoader {
 
-  private val iconsPath = "src/main/resources/images/icons/"
 
-  def getIcons() : List[Icon] = {
+  def getIcons(iconsPath : String) : List[Icon] = {
     FileUtils.getListOfFilesIn(iconsPath)
       .map(file => {
         val filename = file.getName

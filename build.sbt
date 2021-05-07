@@ -1,7 +1,10 @@
+import sbt._
+import Keys._
+
 
 name := "AutoHermod"
 
-version := "0.1"
+version := "0.2"
 
 scalaVersion := "2.12.13"
 
@@ -23,6 +26,13 @@ libraryDependencies += "com.google.apis" % "google-api-services-sheets" % "v4-re
 logLevel := Level.Warn
 Compile / mainClass := Some("com.github.majestic.autohermod.App")
 
+assembly / mainClass := Some("com.github.majestic.autohermod.App")
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+  case "reference.conf" => MergeStrategy.concat
+  case _        => MergeStrategy.first
+}
 
-enablePlugins(JavaAppPackaging)
-enablePlugins(DockerPlugin)
+//enablePlugins(JavaAppPackaging)
+//enablePlugins(DockerPlugin)
+

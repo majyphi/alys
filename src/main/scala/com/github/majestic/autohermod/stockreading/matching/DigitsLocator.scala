@@ -1,7 +1,7 @@
 package com.github.majestic.autohermod.stockreading.matching
 
 import com.github.majestic.autohermod.stockreading.imageloading.Digit
-import com.github.majestic.autohermod.stockreading.model.ItemStock
+import com.github.majestic.autohermod.model.ItemStock
 import org.opencv.core.{Core, CvType, Mat, MatOfPoint, Point, Scalar, Size}
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory
