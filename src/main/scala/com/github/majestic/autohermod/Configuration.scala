@@ -21,5 +21,6 @@ case class AutoHermodConfig(
                            selfID : String,
                            digitsImagesPath : String,
                            iconsImagesPath : String,
-                           googleCredentialsPath : String
+                           googleCredentialsPath : String,
+                           googleTokenDirectory : String
                            )

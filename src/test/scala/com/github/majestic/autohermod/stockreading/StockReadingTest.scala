@@ -5,6 +5,8 @@ import com.github.majestic.autohermod.imgloading.ImgLoader
 import com.github.majestic.autohermod.model.ItemStock
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.collection.immutable
+
 
 class StockReadingTest extends AnyFlatSpec {
 
@@ -14,6 +16,7 @@ class StockReadingTest extends AnyFlatSpec {
     "",
     "resources/images/digits/",
     "resources/images/icons/",
+    "",
     ""
   ))
 
@@ -85,14 +88,14 @@ class StockReadingTest extends AnyFlatSpec {
     assert(itemStocks.contains(ItemStock("pitch_gun", 11)))
     assert(itemStocks.contains(ItemStock("0.44", 5)))
     assert(itemStocks.contains(ItemStock("binoculars", 28)))
-    assert(itemStocks.contains(ItemStock("12.7mm", 35)))
+    assert(itemStocks.contains(ItemStock("14.5mm", 35)))
     assert(itemStocks.contains(ItemStock("argenti", 16)))
     assert(itemStocks.contains(ItemStock("flatbed", 5)))
     assert(itemStocks.contains(ItemStock("9mm", 10)))
     assert(itemStocks.contains(ItemStock("bandages", 40)))
     assert(itemStocks.contains(ItemStock("shovel", 21)))
     assert(itemStocks.contains(ItemStock("7.92mm", 58)))
-    assert(itemStocks.contains(ItemStock("14.5mm", 28)))
+    assert(itemStocks.contains(ItemStock("12.7mm", 28)))
     assert(itemStocks.contains(ItemStock("sticky_bomb", 32)))
     assert(itemStocks.contains(ItemStock("sledge_hammer", 4)))
     assert(itemStocks.contains(ItemStock("trauma_kit", 37)))
@@ -120,6 +123,5 @@ class StockReadingTest extends AnyFlatSpec {
   "StockReader" should "load image from url" in {
     assert(ImgLoader().loadImageFromUrl("https://cdn.discordapp.com/attachments/836306356990246942/838521644795953182/20210502005918_1.jpg").isSuccess)
   }
-
 
 }

@@ -11,6 +11,9 @@ import com.github.majestic.autohermod.model.ItemObjective
 import com.github.majestic.autohermod.processing.MessageProcessing.{acceptedSheetsNonOfficer, getRandomInsult}
 import com.github.majestic.autohermod.stockreading.StockReader
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler, config: AutoHermodConfig) {
@@ -22,21 +25,25 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
       import client.executionContext
       import client.requestsHelper._
 
-      val processingTentative : Try[Unit] = for{
+      val processingTentative: Try[Unit] = for {
         stockName <- getSheetToFill(message)
-        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachment.head,stockName)
+        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachment.head, stockName)
       } yield res
 
       val baseAnswer = generateSuccessFailureAnswer(processingTentative)
-      val listOfObjectives = generateObjectivesAnswer()
-      val answerToSend = personnalizeAnswer(message.authorUserId.map(_.toString))(baseAnswer,listOfObjectives)
+      val stockReadingAnswer = personnalizeAnswer(message.authorUserId.map(_.toString))(baseAnswer)
 
-      run(CreateMessage(message.channelId, CreateMessageData(answerToSend)))
-        .map(_ => ())
+      val answerObjectives: List[CreateMessage] = generateObjectivesAnswer()
+        .map(objective => CreateMessage(message.channelId, CreateMessageData(objective)))
 
-    } else {
-      OptFuture.unit
+      val messagesToSend: List[CreateMessage] = CreateMessage(message.channelId, CreateMessageData(stockReadingAnswer)) :: answerObjectives
+
+      messagesToSend.foreach(message => {
+        Await.result(run(message).value, Duration.create(5, TimeUnit.SECONDS))
+      })
+
     }
+    OptFuture.unit
   }
 
   def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
@@ -45,22 +52,21 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
       message.attachment.nonEmpty
   }
 
-  def getSheetToFill(message: Message) : Try[String] = {
-    if(acceptedSheetsNonOfficer.contains(message.content)){
+  def getSheetToFill(message: Message): Try[String] = {
+    if (acceptedSheetsNonOfficer.contains(message.content)) {
       Success(message.content)
-    } else if(message.content.isEmpty){
+    } else if (message.content.isEmpty) {
       Failure(new Exception(s"Veuillez renseigner dans le message de l'image le stock à remplir. Valeurs acceptées : ${acceptedSheetsNonOfficer.mkString(", ")}"))
     } else {
       Failure(new Exception(s"Stock indiqué inconnu. Valeurs acceptées : ${acceptedSheetsNonOfficer.mkString(", ")}"))
     }
   }
 
-  def personnalizeAnswer(userId: Option[String])(baseAnswer: String, objectives : String): String = {
+  def personnalizeAnswer(userId: Option[String])(baseAnswer: String): String = {
     userId match {
       case Some(MessageProcessing.idMajestic) => {
         s"""L'Entité Créatrice demande. AutoHermod s'exécute.
            |${baseAnswer}
-           |${objectives}
            |""".stripMargin
       }
       case Some(MessageProcessing.idBeignet) => {
@@ -69,23 +75,24 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
       case Some(MessageProcessing.idXiost) => {
         s"""Je t'aime Xiost <3
            |${baseAnswer}
-           |${objectives}
            |""".stripMargin
       }
       case Some(MessageProcessing.idSymory) => {
-        s"""Bien Maître.
-           |${baseAnswer}
-           |${objectives}
+        s""""Ce bot est autant une victime que son créateur :eyes:".
            |""".stripMargin
       }
-      case _ =>  s"""${baseAnswer}
-                    |${objectives}
-                    |""".stripMargin
+      case Some(MessageProcessing.idLadislas) => {
+        s"""OH le plus beau de tous, j’exécute votre demande.
+           |${baseAnswer}
+           |""".stripMargin
+      }
+      case _ => s"""${baseAnswer}
+                   |""".stripMargin
 
     }
   }
 
-  def generateSuccessFailureAnswer(processingTentative : Try[Unit]): String = {
+  def generateSuccessFailureAnswer(processingTentative: Try[Unit]): String = {
     processingTentative match {
       case Success(_) =>
         s""":white_check_mark: Stocks trouvés et envoyés sur Google Sheet !""".stripMargin
@@ -97,14 +104,15 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
     }
   }
 
-  def generateObjectivesAnswer() : String = {
-    sheetHandler.readObjectives() match {
+  def generateObjectivesAnswer(): List[String] = {
+    sheetHandler.readItemsObjectives() match {
       case Success(list) => ItemObjective.formatObjectives(list)
       case Failure(e) => {
         logger.error("Error during objectives reading", e)
-        s""":warning: Erreur rencontrée lors de la récupération des objectifs.
-           |${e.getMessage}
-           |""".stripMargin
+        List(
+          s""":warning: Erreur rencontrée lors de la récupération des objectifs.
+             |${e.getMessage}
+             |""".stripMargin)
       }
     }
   }
@@ -116,13 +124,14 @@ object MessageProcessing {
   val idXiost = "221209880328011776"
   val idMajestic = "243951995709292544"
   val idSymory = "269144294747668482"
+  val idLadislas = "208287865061376001"
 
   val officerRoleId = "820753805242925089"
 
-  val insultList = List("coureuse de rempart","puterelle", "orchidoclaste", "nodocéphale", "coprolithe", "alburostre")
+  val insultList = List("coureuse de rempart", "puterelle", "orchidoclaste", "nodocéphale", "coprolithe", "alburostre")
 
   def getRandomInsult() = {
-    val index = Math.floor(Math.random()*insultList.size).toInt
+    val index = Math.floor(Math.random() * insultList.size).toInt
     insultList(index)
   }
 
@@ -132,7 +141,7 @@ object MessageProcessing {
 
   def apply(config: AutoHermodConfig): MessageProcessing = {
     val imgLoader = ImgLoader()
-    val stockReader = StockReader(config : AutoHermodConfig)
+    val stockReader = StockReader(config: AutoHermodConfig)
     val sheetHandler = SheetHandler(config)
 
     new MessageProcessing()(imgLoader, stockReader, sheetHandler, config)

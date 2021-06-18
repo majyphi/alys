@@ -1,7 +1,8 @@
 package com.github.majestic.autohermod.googlesheet
 
 import com.github.majestic.autohermod.AutoHermodConfig
-import com.github.majestic.autohermod.model.{ItemObjective, ItemStock}
+import com.github.majestic.autohermod.googlesheet.SheetHandler.{ArmesLegeresObjectivesRange, ArmesLourdesObjectivesRange, MaterialsObjectivesRange, SoinsObjectivesRange, SuppliesObjectivesRange, UtilitairesObjectivesRange, extractObjectives}
+import com.github.majestic.autohermod.model.{FoundItemObjective, ItemObjective, ItemStock, NotFoundItemObjective, Objectives}
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
@@ -57,17 +58,17 @@ case class SheetHandler(service: Sheets) {
 
   }
 
-  def readObjectives(): Try[List[ItemObjective]] = {
+  def readItemsObjectives(): Try[Objectives] = {
     Try {
-      service.spreadsheets.values.get(SheetHandler.spreadsheetId, SheetHandler.rangeObjectivesRange).execute
-        .getValues
-        .asScala.toList
-        .map(list => {
-          ItemObjective(list.get(0).asInstanceOf[String],
-            list.get(1).asInstanceOf[String],
-            list.get(2).asInstanceOf[String],
-            list.get(3).asInstanceOf[String])
-        })
+
+      val armesLegeres = extractObjectives(ArmesLegeresObjectivesRange)(service)
+      val armesLourdes = extractObjectives(ArmesLourdesObjectivesRange)(service)
+      val utilitaires = extractObjectives(UtilitairesObjectivesRange)(service)
+      val soins = extractObjectives(SoinsObjectivesRange)(service)
+      val supplies = extractObjectives(SuppliesObjectivesRange)(service)
+      val materials = extractObjectives(MaterialsObjectivesRange)(service)
+
+      Objectives(armesLegeres, armesLourdes, utilitaires, soins, supplies, materials)
     }
   }
 
@@ -80,13 +81,17 @@ object SheetHandler {
   private val TOKENS_DIRECTORY_PATH = "tokens"
 
   private val SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS)
-  private val CREDENTIALS_FILE_PATH = "src/main/resources/google_credentials.json"
 
   private val INPUT_VALUE_OPTION = "USER_ENTERED"
 
   val spreadsheetId = "1iE1aAd9YFnrUFCppdKk5aUebq1ziIHByjDxu-m3iRck"
 
-  val rangeObjectivesRange = "Objectifs!G8:J14"
+  val ArmesLegeresObjectivesRange = "Objectifs!C13:F19"
+  val ArmesLourdesObjectivesRange = "Objectifs!H13:K19"
+  val UtilitairesObjectivesRange = "Objectifs!M13:P19"
+  val SoinsObjectivesRange = "Objectifs!C26:F32"
+  val SuppliesObjectivesRange = "Objectifs!H26:K32"
+  val MaterialsObjectivesRange = "Objectifs!M26:P29"
 
   val acceptedValuesNonOfficer = List("Stock1", "Stock2")
 
@@ -98,7 +103,7 @@ object SheetHandler {
 
   def apply(implicit config: AutoHermodConfig): SheetHandler = {
     val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport
-    val credentials = getCredentials(HTTP_TRANSPORT, config.googleCredentialsPath)
+    val credentials = getCredentials(HTTP_TRANSPORT, config.googleCredentialsPath, config.googleTokenDirectory)
     val service: Sheets = new Sheets
     .Builder(HTTP_TRANSPORT, JSON_FACTORY, credentials)
       .setApplicationName(APPLICATION_NAME)
@@ -107,18 +112,35 @@ object SheetHandler {
     SheetHandler(service)
   }
 
-  private def getCredentials(HTTP_TRANSPORT: NetHttpTransport, credentialsPath: String): Credential = { // Load client secrets.
+  private def getCredentials(HTTP_TRANSPORT: NetHttpTransport, credentialsPath: String, tokensDirectoryPath : String): Credential = { // Load client secrets.
     val fileReader = new FileReader(credentialsPath)
-    if (fileReader == null) throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH)
+    if (fileReader == null) throw new FileNotFoundException("Resource not found: " + credentialsPath)
     val clientSecrets: GoogleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, fileReader)
     // Build flow and trigger user authorization request.
+
     val flow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-      .setDataStoreFactory(new FileDataStoreFactory(new File(TOKENS_DIRECTORY_PATH)))
+      .setDataStoreFactory(new FileDataStoreFactory(new File(tokensDirectoryPath)))
       .setAccessType("offline")
       .build
-    val receiver = new LocalServerReceiver.Builder().setPort(8888).build
-    new AuthorizationCodeInstalledApp(flow, receiver).authorize("AutoHermod")
 
+    val receiver = new LocalServerReceiver.Builder().setPort(8888).build
+
+    new AuthorizationCodeInstalledApp(flow, receiver).authorize("AutoHermod")
+  }
+
+  def extractObjectives(range: String)(service: Sheets): List[ItemObjective] = {
+    service.spreadsheets.values.get(SheetHandler.spreadsheetId, range).execute
+      .getValues
+      .asScala.toList
+      .map(list => {
+        Try {
+          FoundItemObjective(list.get(0).asInstanceOf[String],
+            list.get(1).asInstanceOf[String],
+            list.get(2).asInstanceOf[String],
+            list.get(3).asInstanceOf[String])
+        }
+          .getOrElse(NotFoundItemObjective())
+      })
   }
 
 }
