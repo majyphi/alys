@@ -1,6 +1,9 @@
 {
   "token" : "",
-  "channel" : "",
-  "self-id" : ""
-  "google-credentials-path" : ""
+  "channel" : "836306356990246942",
+  "self-id" : "",
+  "google-credentials-path" : ".secrets/google_credentials.json",
+  "digits-images-path" : "resources/images/digits/",
+  "icons-images-path" : "resources/images/icons/",
+  "google-token-directory" : "tokens/"
 }
