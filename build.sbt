@@ -1,22 +1,20 @@
 import sbt._
 import Keys._
 
+name := "aLys"
 
-name := "AutoHermod"
+version := "0.3"
 
-version := "0.2"
-
-scalaVersion := "2.12.13"
-
+scalaVersion := "2.13.8"
 
 resolvers += Resolver.JCenterRepository
 
 
 libraryDependencies += "net.katsstuff" %% "ackcord" % "0.17.1" //For high level API, includes all the other modules
 libraryDependencies += "net.katsstuff" %% "ackcord-core" % "0.17.1" //Low level core API
-libraryDependencies += "com.github.pureconfig" % "pureconfig_2.12" % "0.14.1"
+libraryDependencies += "com.github.pureconfig" % "pureconfig_2.13" % "0.14.1"
 // https://mvnrepository.com/artifact/org.openpnp/opencv
-libraryDependencies += "org.openpnp" % "opencv" % "3.4.2-2"
+libraryDependencies += "org.openpnp" % "opencv" % "4.5.1-2"
 
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.8.0-beta4"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.7" % "test"
@@ -26,9 +24,9 @@ libraryDependencies += "com.google.apis" % "google-api-services-sheets" % "v4-re
 
 
 logLevel := Level.Warn
-Compile / mainClass := Some("com.github.majestic.autohermod.App")
+Compile / mainClass := Some("com.github.majestic.alys.App")
 
-assembly / mainClass := Some("com.github.majestic.autohermod.App")
+assembly / mainClass := Some("com.github.majestic.alys.App")
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
   case "reference.conf" => MergeStrategy.concat
