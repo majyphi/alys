@@ -19,20 +19,9 @@ case class DiscordHandler(client: DiscordClient, config: ALysConfig) {
   def runWith(messageProcessing: MessageProcessing): Unit = {
 
     client.onEventSideEffects { implicit cache => {
-      case APIMessage.Ready(_) =>
-        OptFuture.pure(logger.info("Login successful. Attempting to notify channel..."))
-        Await.result(client.requestsHelper.run(CreateMessage.mkContent(TextChannelId.apply(config.channel),"Ready and listening, Sir!")).value,FiniteDuration(15, TimeUnit.SECONDS))
-        match {
-          case Some(_) => OptFuture.pure(logger.info("Channel Notified. Waiting for stock information..."))
-          case None => OptFuture.pure(logger.error("Could not notify channel of bot availability"))
-        }
-
+      case APIMessage.Ready(_) => OptFuture.pure(logger.info("Login successful"))
       case APIMessage.MessageCreate(_, message, _) => messageProcessing.processMessageCreated(message)(client, cache)
     }}
-
-    sys.addShutdownHook{
-
-    }
 
     client.login()
 

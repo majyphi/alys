@@ -46,7 +46,7 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("binoculars", 55),
       ItemStock("gas_filter", 55),
       ItemStock("uni_snow", 52),
-      ItemStock("0.44", 47),
+      ItemStock("0.44mm", 47),
       ItemStock("40mm", 47),
       ItemStock("loughcaster", 47),
       ItemStock("7.62mm", 43),
@@ -87,14 +87,12 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("ironship", 3),
       ItemStock("crane", 3),
       ItemStock("dunne_fuelrunner", 3),
-      ItemStock("wolfhound_crate", 2),
       ItemStock("dunne", 1),
       ItemStock("kivela", 1),
       ItemStock("spire_crate", 1),
       ItemStock("gallant_crate", 1),
-      ItemStock("resources", 32),
-      ItemStock("shipping_container", 1),
-      ItemStock("lariat_crate", 1)
+      ItemStock("resources_container", 32),
+      ItemStock("shipping_container", 1)
     )
 
     val toSpare = result.filterNot(expected.contains)
@@ -122,7 +120,7 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("12.7mm", 123),
       ItemStock("uni_snow", 107),
       ItemStock("fiddler", 80),
-      ItemStock("0.44", 78),
+      ItemStock("0.44mm", 78),
       ItemStock("7.62mm", 76),
       ItemStock("7.92mm", 65),
       ItemStock("dunne_loadlugger", 63),
@@ -141,9 +139,7 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("9mm", 21),
       ItemStock("ht_mk1", 20),
       ItemStock("neville", 20),
-      ItemStock("flak", 20),
       ItemStock("ash_grenade", 19),
-      ItemStock("flak_crate", 19),
       ItemStock("uni_ammo", 18),
       ItemStock("shipping_container_crate", 17),
       ItemStock("tripod", 15),
@@ -159,7 +155,6 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("dunne_landrunner", 9),
       ItemStock("cutler_foebreaker", 9),
       ItemStock("mammon", 8),
-      ItemStock("at_crate", 5),
       ItemStock("cometa", 8),
       ItemStock("shovel", 8),
       ItemStock("ironship", 8),
@@ -167,13 +162,12 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("pallet_barbed_crate", 7),
       ItemStock("dunne_landrunner_crate", 7),
       ItemStock("pallet_sandbag_crate", 7),
-      ItemStock("lariat_crate", 7),
       ItemStock("mortar_shells", 6),
       ItemStock("dunne_fuelrunner", 6),
       ItemStock("cement", 6),
       ItemStock("caine", 5),
-      ItemStock("wolfhound_crate", 5),
       ItemStock("petrol", 4),
+      ItemStock("frag_grenade", 4),
       ItemStock("20mm", 3),
       ItemStock("obrien_crate", 3),
       ItemStock("ht_mk1_crate", 3),
@@ -200,8 +194,8 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
       ItemStock("drummond_loscann_crate", 1),
       ItemStock("listening", 1),
       ItemStock("small_container", 1),
-      ItemStock("resources", 113),
-      ItemStock("resources_crate", 7),
+      ItemStock("resources_container", 113),
+      ItemStock("resources_container_crate", 7),
     )
 
 

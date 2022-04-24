@@ -66,7 +66,6 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
       case Success(_) =>
         s""":white_check_mark: Stocks have been updated with your intel!""".stripMargin
       case Failure(e) =>
-
         s""":warning: An error was found when processing the image. I need my supervisor to come take a look: @${config.adminUserID}.
            |${e.getMessage}
            |""".stripMargin
