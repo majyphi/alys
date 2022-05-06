@@ -23,7 +23,7 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
 
       val stocksProcessingAttempt = for {
         stockName <- getSheetToFill(message)
-        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachment.head, stockName)
+        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, stockName)
       } yield res
 
       val answerMessage = stocksProcessingAttempt match {
@@ -40,6 +40,7 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
                |${e.getMessage}
                |""".stripMargin)
       }
+
       Await.result(run(CreateMessage(message.channelId, answerMessage)).value, Duration.Inf)
     }
     OptFuture.unit
@@ -48,7 +49,7 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
   def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
     message.channelId.asString == config.channel &&
       !message.authorUserId.map(_.toString).contains(config.selfID) &&
-      message.attachment.nonEmpty
+      message.attachments.nonEmpty
   }
 
   def getSheetToFill(message: Message): Try[String] = {

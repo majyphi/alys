@@ -10,8 +10,8 @@ scalaVersion := "2.13.8"
 resolvers += Resolver.JCenterRepository
 
 
-libraryDependencies += "net.katsstuff" %% "ackcord" % "0.17.1" //For high level API, includes all the other modules
-libraryDependencies += "net.katsstuff" %% "ackcord-core" % "0.17.1" //Low level core API
+libraryDependencies += "net.katsstuff" %% "ackcord" % "0.18.0-RC1" exclude ("com.sedmelluq","lavaplayer") //For high level API, includes all the other modules
+libraryDependencies += "com.sedmelluq" % "lavaplayer" % "1.3.73"
 libraryDependencies += "com.github.pureconfig" % "pureconfig_2.13" % "0.14.1"
 // https://mvnrepository.com/artifact/org.openpnp/opencv
 libraryDependencies += "org.openpnp" % "opencv" % "4.5.1-2"
