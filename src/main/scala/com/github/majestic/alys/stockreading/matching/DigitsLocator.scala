@@ -1,8 +1,8 @@
 package com.github.majestic.alys.stockreading.matching
 
-import com.github.majestic.alys.stockreading.imageloading.Digit
 import com.github.majestic.alys.model.ItemStock
-import org.opencv.core.{Core, CvType, Mat, MatOfPoint, Point, Scalar, Size}
+import com.github.majestic.alys.stockreading.imageloading.Digit
+import org.opencv.core._
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory
 
