@@ -1,6 +1,6 @@
 package com.github.majestic.alys.stockreading
 
-import com.github.majestic.alys.ALysConfig
+import com.github.majestic.alys.{ALysConfig, model}
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.model.ItemStock
 import org.scalatest.flatspec.AnyFlatSpec
@@ -205,6 +205,20 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
     toSpare shouldBe empty
     missing shouldBe empty
 
+
+  }
+
+  "StockReader" should "correctly read stocks with confusing numbers" in {
+
+    val imgTestPath = "src/test/resources/1k/test_300.png"
+
+    val parsingResult = stocksReader.extractStocksFromPath(imgTestPath)
+
+    assert(parsingResult.forall(_.isSuccess))
+
+    val result = parsingResult.map(_.get)
+
+    result should contain (ItemStock("emat",300))
 
   }
 

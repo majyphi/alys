@@ -29,7 +29,7 @@ object DigitsLocator {
       val digitsLocationsToExclude = orderedDigits
         .sliding(2)
         .toList
-        .flatMap(compareDigitLocations)
+        .flatMap(getLowestScoreDigitWhenOverlap)
 
       val digitsToKeep = orderedDigits.filterNot(digitsLocationsToExclude.contains)
 
@@ -45,16 +45,16 @@ object DigitsLocator {
 
   }
 
-  def compareDigitLocations(list : List[DigitLocation]): Option[DigitLocation] = {
+  // Flags the low score digit when they are on the same place
+  def getLowestScoreDigitWhenOverlap(list : List[DigitLocation]): Option[DigitLocation] = {
     list match {
-      case List(left,right) => {
+      case List(left,right) =>
         val limit = left.offset + (left.width/2)
         if(right.offset < limit ){
-          Some(list.maxBy(_.score))
+          Some(list.minBy(_.score))
         } else {
           None
         }
-      }
       case _ => None // Should not happen
     }
 
