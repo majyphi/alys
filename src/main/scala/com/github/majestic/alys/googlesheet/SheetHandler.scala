@@ -70,8 +70,6 @@ object SheetHandler {
 
   private val INPUT_VALUE_OPTION = "USER_ENTERED"
 
-  val acceptedValuesNonOfficer = List("LYS1", "LYS2")
-
   val rangeItemNamesOf: String => String = (sheetName: String) => s"$sheetName!A:A"
   val rangeItemValuesOf: String => String = (sheetName: String) => s"$sheetName!B:B"
 

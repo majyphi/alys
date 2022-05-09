@@ -3,12 +3,11 @@ package com.github.majestic.alys.processing
 import ackcord.data.Message
 import ackcord.requests.{CreateMessage, CreateMessageData}
 import ackcord.{CacheSnapshot, DiscordClient, OptFuture}
-import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.ALysConfig
+import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.exceptions.StockNameException
 import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
-import com.github.majestic.alys.processing.MessageProcessing.acceptedSheetsNonOfficer
 import com.github.majestic.alys.stockreading.StockReader
 
 import scala.concurrent.Await
@@ -22,8 +21,8 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
       import client.requestsHelper._
 
       val stocksProcessingAttempt = for {
-        stockName <- getSheetToFill(message)
-        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, stockName)
+        sheetName <- getSheetToFill(message)
+        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, sheetName)
       } yield res
 
       val answerMessage = stocksProcessingAttempt match {
@@ -53,12 +52,12 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
   }
 
   def getSheetToFill(message: Message): Try[String] = {
-    if (acceptedSheetsNonOfficer.contains(message.content)) {
+    if (message.content.matches("LYS[0-9]+")) {
       Success(message.content)
     } else if (message.content.isEmpty) {
-      Failure(StockNameException(s"Please specify the stockpile to update : ${acceptedSheetsNonOfficer.mkString(", ")}"))
+      Failure(StockNameException(s"Please specify the stockpile to update. It should match an existing sheet. Ex: LYS1, LYS2..."))
     } else {
-      Failure(StockNameException(s"Stockpile name unknown. Accepted values are : ${acceptedSheetsNonOfficer.mkString(", ")}"))
+      Failure(StockNameException(s"Stockpile name unknown. It should match an existing sheet. Ex: LYS1, LYS2..."))
     }
   }
 
@@ -77,7 +76,6 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
 
 object MessageProcessing {
 
-  val acceptedSheetsNonOfficer = List("LYS1", "LYS2")
 
   def apply(config: ALysConfig): MessageProcessing = {
     val imgLoader = ImgLoader()
