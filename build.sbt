@@ -23,7 +23,6 @@ libraryDependencies += "com.google.apis" % "google-api-services-sheets" % "v4-re
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.12" % "test"
 libraryDependencies += "com.github.pureconfig" % "pureconfig_2.13" % "0.17.1"
 //Logging
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.8.0-beta4"
 // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.11"
 
