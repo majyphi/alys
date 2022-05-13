@@ -18,8 +18,10 @@ object DigitsLocator {
 
   def parseDigits(digits: List[Digit])(itemValueImg: ItemValueImg): Try[ItemStock] = {
 
-    val foundDigits = digits
+    val foundDigits: List[DigitLocation] = digits
       .flatMap(locateAllInstancesOfDigit(itemValueImg))
+
+   itemValueImg.release
 
     if (foundDigits.nonEmpty) {
       logger.debug(s"Found Digits : ${foundDigits}")

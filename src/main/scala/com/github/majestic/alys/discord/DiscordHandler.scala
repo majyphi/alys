@@ -6,10 +6,8 @@ import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.processing.MessageProcessing
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Try}
 
 case class DiscordHandler(client: DiscordClient, config: ALysConfig) {
 

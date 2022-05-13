@@ -1,6 +1,7 @@
 package com.github.majestic.alys.stockreading.matching
 
 import com.github.majestic.alys.stockreading.imageloading.Icon
+import com.github.majestic.alys.stockreading.matching.ItemsLocator.{itemHeight, itemWidth}
 import org.opencv.core.{Core, CvType, Mat, Point}
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory
@@ -8,7 +9,11 @@ import org.slf4j.LoggerFactory
 
 object ItemsLocator {
 
+
   val ValueRegionWidth = 40
+
+  val itemWidth = 56
+  val itemHeight = 32
 
   val logger = LoggerFactory.getLogger(this.getClass)
   private val detectionTreshold = 0.90
@@ -33,7 +38,7 @@ object ItemsLocator {
     Imgproc.matchTemplate(img, icon.template, matchResult, Imgproc.TM_CCORR_NORMED)
     val minMaxLocation = Core.minMaxLoc(matchResult)
     if (minMaxLocation.maxVal > detectionTreshold) {
-      Some(ItemIconLocation(icon, minMaxLocation.maxVal, minMaxLocation.maxLoc))
+      Some(ItemIconLocation(icon.name, minMaxLocation.maxVal, minMaxLocation.maxLoc))
     } else {
       logger.info(s"Could not find ${icon.name} in given image")
       None
@@ -55,7 +60,7 @@ case class ItemLocationDecider(approximatePosition: Point, potentialItems: List[
 
   def findBestFittingItem: ItemIconLocation = {
     if(potentialItems.size > 1){
-      ItemsLocator.logger.info(s"Confusion between multiple icons in [${approximatePosition.x},${approximatePosition.y}]: ${potentialItems.map(entry => (entry.icon.name, entry.score)).mkString(",")}")
+      ItemsLocator.logger.info(s"Confusion between multiple icons in [${approximatePosition.x},${approximatePosition.y}]: ${potentialItems.map(entry => (entry.iconName, entry.score)).mkString(",")}")
     }
     potentialItems.maxBy(_.score)
   }
@@ -82,15 +87,13 @@ object ItemLocationDecider {
 
 }
 
-case class ItemIconLocation(icon: Icon, score: Double, position: Point) {
+case class ItemIconLocation(iconName : String, score: Double, position: Point) {
 
   def toItemValueLocation(): ItemValueLocation = {
-    val itemWidth = icon.template.width()
-    val itemHeight = icon.template.height()
     val topLeft = new Point(position.x + itemWidth + 1, position.y)
     val bottomRight = new Point(topLeft.x + ItemsLocator.ValueRegionWidth, position.y + itemHeight)
     ItemValueLocation(
-      itemName = icon.name,
+      itemName = iconName,
       topLeft,
       bottomRight
     )
@@ -113,6 +116,10 @@ case class ItemValueLocation(itemName: String, topLeft: Point, bottomRight: Poin
 
 }
 
-case class ItemValueImg(itemName: String, img: Mat)
+case class ItemValueImg(itemName: String, img: Mat){
+
+  def release = img.release()
+
+}
 
 

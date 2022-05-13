@@ -15,12 +15,18 @@ case class StockReader(digits: List[Digit], icons: List[Icon]) {
 
     val resizedImage = new Mat()
     Imgproc.resize(img, resizedImage, new Size(1920, 1080))
+    img.release()
 
     val foundItems = ItemsLocator.identifyItemsFromIcons(icons,resizedImage)
 
-    foundItems.map(_.toItemValueLocation())
+    val result = foundItems.map(_.toItemValueLocation())
       .map(_.extractValueImg(resizedImage))
       .map(DigitsLocator.parseDigits(digits))
+
+    resizedImage.release()
+
+    result
+
   }
 
   def extractStocksFromPath(path: String) = {

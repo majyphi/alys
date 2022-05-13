@@ -5,6 +5,7 @@ import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.stockreading.StockReader
 import com.github.majestic.alys.model.ItemStock
+import org.opencv.core.Mat
 
 import scala.util.{Failure, Success, Try}
 

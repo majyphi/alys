@@ -28,19 +28,19 @@ class ItemLocatorTest extends AnyFlatSpec with Matchers {
 
     foundItems should have length 6
 
-    foundItems.exists(_.icon.name == "dunne_fuelrunner") should be(true)
-    foundItems.exists(_.icon.name == "lariat") should be(true)
-    foundItems.exists(_.icon.name == "ressources") should be(true)
-    foundItems.exists(_.icon.name == "bunker_supplies") should be(true)
-    foundItems.exists(_.icon.name == "flare_shells") should be(true)
-    foundItems.exists(_.icon.name == "spire") should be(true)
+    foundItems.exists(_.iconName == "dunne_fuelrunner") should be(true)
+    foundItems.exists(_.iconName == "lariat") should be(true)
+    foundItems.exists(_.iconName == "ressources") should be(true)
+    foundItems.exists(_.iconName == "bunker_supplies") should be(true)
+    foundItems.exists(_.iconName == "flare_shells") should be(true)
+    foundItems.exists(_.iconName == "spire") should be(true)
 
-    foundItems.exists(_.icon.name == "drummond_loscann") should be(false)
-    foundItems.exists(_.icon.name == "lariat_crate") should be(false)
-    foundItems.exists(_.icon.name == "pellet_beam") should be(false)
-    foundItems.exists(_.icon.name == "petrole") should be(false)
-    foundItems.exists(_.icon.name == "shrapnell_shells") should be(false)
-    foundItems.exists(_.icon.name == "caine") should be(false)
+    foundItems.exists(_.iconName == "drummond_loscann") should be(false)
+    foundItems.exists(_.iconName == "lariat_crate") should be(false)
+    foundItems.exists(_.iconName == "pellet_beam") should be(false)
+    foundItems.exists(_.iconName == "petrole") should be(false)
+    foundItems.exists(_.iconName == "shrapnell_shells") should be(false)
+    foundItems.exists(_.iconName == "caine") should be(false)
 
   }
 
