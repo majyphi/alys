@@ -11,6 +11,8 @@ import com.github.majestic.alys.stockreading.StockReader
 
 import scala.util.{Failure, Success, Try}
 
+
+
 class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler, config: ALysConfig) {
 
   def processMessageCreated(message: Message): Option[CreateMessage] = {

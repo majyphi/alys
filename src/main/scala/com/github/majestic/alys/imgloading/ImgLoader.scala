@@ -51,14 +51,6 @@ case class ImgLoader() {
     }
   }
 
-  def extractFormat(url: String): String = {
-    val resultingUrl = url.replaceAll("\\?.+", "")
-
-    val array = resultingUrl.split("\\.")
-
-    array.last
-  }
-
 }
 
 
