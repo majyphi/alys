@@ -2,7 +2,6 @@ package com.github.majestic.alys.processing
 
 import ackcord.data.Message
 import ackcord.requests.{CreateMessage, CreateMessageData}
-import ackcord.{CacheSnapshot, DiscordClient, OptFuture}
 import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.exceptions.StockNameException
@@ -10,16 +9,12 @@ import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.stockreading.StockReader
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler, config: ALysConfig) {
 
-  def processMessageCreated(message: Message)(implicit client: DiscordClient, cache: CacheSnapshot): OptFuture[Unit] = {
+  def processMessageCreated(message: Message): Option[CreateMessage] = {
     if (isMessageAUserUploadInStockUpdate(message)) {
-      import client.requestsHelper._
-
       val stocksProcessingAttempt = for {
         sheetName <- getSheetToFill(message)
         res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, sheetName)
@@ -39,10 +34,8 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
                |${e.getMessage}
                |""".stripMargin)
       }
-
-      Await.result(run(CreateMessage(message.channelId, answerMessage)).value, Duration.Inf)
-    }
-    OptFuture.unit
+     Some(CreateMessage(message.channelId, answerMessage))
+    } else None
   }
 
   def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
