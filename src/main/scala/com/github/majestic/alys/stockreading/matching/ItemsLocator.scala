@@ -40,7 +40,7 @@ object ItemsLocator {
     if (minMaxLocation.maxVal > detectionTreshold) {
       Some(ItemIconLocation(icon.name, minMaxLocation.maxVal, minMaxLocation.maxLoc))
     } else {
-      logger.info(s"Could not find ${icon.name} in given image")
+      logger.debug(s"Could not find ${icon.name} in given image")
       None
     }
   }
@@ -60,7 +60,7 @@ case class ItemLocationDecider(approximatePosition: Point, potentialItems: List[
 
   def findBestFittingItem: ItemIconLocation = {
     if(potentialItems.size > 1){
-      ItemsLocator.logger.info(s"Confusion between multiple icons in [${approximatePosition.x},${approximatePosition.y}]: ${potentialItems.map(entry => (entry.iconName, entry.score)).mkString(",")}")
+      ItemsLocator.logger.debug(s"Confusion between multiple icons in [${approximatePosition.x},${approximatePosition.y}]: ${potentialItems.map(entry => (entry.iconName, entry.score)).mkString(",")}")
     }
     potentialItems.maxBy(_.score)
   }

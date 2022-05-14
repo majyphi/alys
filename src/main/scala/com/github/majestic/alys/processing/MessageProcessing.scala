@@ -1,10 +1,11 @@
 package com.github.majestic.alys.processing
 
-import ackcord.Requests
 import ackcord.data.Message
 import ackcord.requests.{CreateMessage, CreateMessageData}
-import akka.stream.{BoundedSourceQueue, Materializer}
-import akka.stream.scaladsl.{Sink, Source}
+import ackcord.{APIMessage, Cache, Requests}
+import akka.NotUsed
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Flow, RunnableGraph, Sink}
 import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.exceptions.StockNameException
@@ -12,57 +13,56 @@ import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.stockreading.StockReader
 
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
 class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler, config: ALysConfig) {
 
-  def queue(implicit requests: Requests, materializer : Materializer): BoundedSourceQueue[Message] = {
-    Source
-      .queue[Message](20)
+  def getGraphForMessageProcessing(events: Cache, requests: Requests): RunnableGraph[NotUsed] = {
+    events
+      .subscribeAPI
+      .collectType[APIMessage.MessageCreate]
+      .map(_.message)
       .filter(isMessageAUserUploadInStockUpdate)
-      .throttle(1, 5.second, _ => 1)
-      .map(processMessageCreated)
-      .to(Sink.foreach[Option[CreateMessage]]{
-        case Some(message) => requests.singleIgnore(message)
-        case None => ()
-      })
-      .run()
+      .buffer(1, OverflowStrategy.backpressure)
+      .via(Flow.fromFunction(processImage))
+      .to(Sink.foreach[CreateMessage](msg => requests.singleIgnore(msg)))
+
   }
 
+  def processImage(message: Message): CreateMessage = {
+    logger.info("Begin processing: " + message.id.asString)
 
-  def processMessageCreated(message: Message): Option[CreateMessage] = {
-    if (isMessageAUserUploadInStockUpdate(message)) {
-      val stocksProcessingAttempt = for {
-        sheetName <- getSheetToFill(message)
-        res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, sheetName)
-      } yield res
+    val stocksProcessingAttempt = for {
+      sheetName <- getSheetToFill(message)
+      res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, sheetName)
+    } yield res
 
-      val answerMessage = stocksProcessingAttempt match {
-        case Success(_) =>
-          CreateMessageData(
-            s""":white_check_mark: Stocks have been updated with your intel!
-               |Please check new objectives on: ${sheetHandler.getURL()}
-               |""".stripMargin)
-        case Failure(e: StockNameException) => CreateMessageData(e.message)
-        case Failure(e) =>
-          logger.error("Error during processing", e)
-          CreateMessageData(
-            s""":warning: An error was found when processing the image. I need my supervisor to come take a look: <@${config.adminUserID}>.
-               |${e.getMessage}
-               |""".stripMargin)
-      }
-     Some(CreateMessage(message.channelId, answerMessage))
-    } else None
+    val answerMessage = stocksProcessingAttempt match {
+      case Success(_) =>
+        CreateMessageData(
+          s""":white_check_mark: Stocks have been updated with your intel!
+             |Please check new objectives on: ${sheetHandler.getURL()}
+             |""".stripMargin)
+      case Failure(e: StockNameException) => CreateMessageData(e.message)
+      case Failure(e) =>
+        logger.error("Error during processing", e)
+        CreateMessageData(
+          s""":warning: An error was found when processing the image. I need my supervisor to come take a look: <@${config.adminUserID}>.
+             |${e.getMessage}
+             |""".stripMargin)
+    }
+    logger.info("End processing: " + message.id.asString)
+
+    CreateMessage(message.channelId, answerMessage.copy(replyTo = Some(message.id)))
   }
 
-  def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
+  private def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
     message.channelId.asString == config.channel &&
       !message.authorUserId.map(_.toString).contains(config.selfID) &&
       message.attachments.nonEmpty
   }
 
-  def getSheetToFill(message: Message): Try[String] = {
+  private def getSheetToFill(message: Message): Try[String] = {
     if (message.content.matches("LYS[0-9]+")) {
       Success(message.content)
     } else if (message.content.isEmpty) {
@@ -72,7 +72,7 @@ class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader,
     }
   }
 
-  def generateSuccessFailureAnswer(processingTentative: Try[Unit]): String = {
+  private def generateSuccessFailureAnswer(processingTentative: Try[Unit]): String = {
     processingTentative match {
       case Success(_) =>
         s""":white_check_mark: Stocks have been updated with your intel!""".stripMargin

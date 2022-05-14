@@ -6,8 +6,8 @@ import ackcord.gateway.GatewaySettings
 import ackcord.requests.CreateMessage
 import ackcord.{APIMessage, BotAuthentication, CacheSettings, ClientSettings, DiscordClient, DiscordShard, EventListener, Events, EventsController, RequestSettings, Requests}
 import akka.NotUsed
-import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Flow
 import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.processing.MessageProcessing
@@ -19,30 +19,20 @@ case class DiscordHandler(client: DiscordClient, config: ALysConfig) {
 
   def runWith(messageProcessing: MessageProcessing): Unit = {
 
-    val myListener = new MessageProcessingListener(client.requests, messageProcessing)
-
-    client.registerListener(myListener.onLogin)
-    client.registerListener(myListener.onStockUpload)
-    client.login()
-
-  }
-
-  def queueRunWith(messageProcessing: MessageProcessing): Unit = {
-
+    import ackcord.requests.{Ratelimiter, RatelimiterActor, RequestSettings}
     import akka.actor.typed._
     import akka.actor.typed.scaladsl._
-    import akka.stream.scaladsl.Sink
     import akka.util.Timeout
+
     import scala.concurrent.duration._
-    import ackcord.requests.{Ratelimiter, RatelimiterActor, RequestSettings}
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.ignore, "AckCord")
     import system.executionContext
 
-    val cache =  Events.create(parallelism = 2)
+    val cache =  Events.create()
     val ratelimitActor = system.systemActorOf(RatelimiterActor(), "Ratelimiter")
 
-    implicit val requests = {
+    implicit val requests: Requests = {
       implicit val timeout: Timeout = 2.minutes //For the ratelimiter
       new Requests(
         RequestSettings(
@@ -52,19 +42,8 @@ case class DiscordHandler(client: DiscordClient, config: ALysConfig) {
       )
     }
 
-    cache
-      .subscribeAPI
-      .collectType[APIMessage.MessageCreate]
-      .map(_.message)
-      .map(x => {
-        messageProcessing.queue.offer(x) match {
-          case QueueOfferResult.Enqueued    => logger.debug(s"enqueued $x")
-          case QueueOfferResult.Dropped     => logger.warn(s"dropped $x")
-          case QueueOfferResult.Failure(ex) => logger.error(s"Offer failed ${ex.getMessage}")
-          case QueueOfferResult.QueueClosed => logger.error(("Source Queue closed"))
-        }
-      })
-      .runWith(Sink.ignore)
+    messageProcessing.getGraphForMessageProcessing(cache,requests)
+      .run()
 
     val gatewaySettings = GatewaySettings(config.token)
     DiscordShard.fetchWsGateway.foreach { wsUri =>
@@ -78,18 +57,18 @@ case class DiscordHandler(client: DiscordClient, config: ALysConfig) {
 
 }
 
-class MessageProcessingListener(requests: Requests, messageProcessing: MessageProcessing) extends EventsController(requests) {
-  val onLogin: EventListener[APIMessage.Ready, NotUsed] =
-    Event.on[APIMessage.Ready].withSideEffects { _ =>
-      logger.info("Login successful")
-    }
-
-  val onStockUpload: EventListener[MessageCreate, NotUsed] =
-    TextChannelEvent
-      .on[APIMessage.MessageCreate]
-      .withRequestOpt(eventListener => messageProcessing.processMessageCreated(eventListener.event.message))
-
-}
+//class MessageProcessingListener(requests: Requests, messageProcessing: MessageProcessing) extends EventsController(requests) {
+//  val onLogin: EventListener[APIMessage.Ready, NotUsed] =
+//    Event.on[APIMessage.Ready].withSideEffects { _ =>
+//      logger.info("Login successful")
+//    }
+//
+//  val onStockUpload: EventListener[MessageCreate, NotUsed] =
+//    TextChannelEvent
+//      .on[APIMessage.MessageCreate]
+//      .withRequest(eventListener => messageProcessing.processImage(eventListener.event.message))
+//
+//}
 
 object DiscordHandler {
 
