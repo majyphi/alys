@@ -1,7 +1,10 @@
 package com.github.majestic.alys.processing
 
+import ackcord.Requests
 import ackcord.data.Message
 import ackcord.requests.{CreateMessage, CreateMessageData}
+import akka.stream.{BoundedSourceQueue, Materializer}
+import akka.stream.scaladsl.{Sink, Source}
 import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.exceptions.StockNameException
@@ -9,11 +12,24 @@ import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.stockreading.StockReader
 
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-
-
 class MessageProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler, config: ALysConfig) {
+
+  def queue(implicit requests: Requests, materializer : Materializer): BoundedSourceQueue[Message] = {
+    Source
+      .queue[Message](20)
+      .filter(isMessageAUserUploadInStockUpdate)
+      .throttle(1, 5.second, _ => 1)
+      .map(processMessageCreated)
+      .to(Sink.foreach[Option[CreateMessage]]{
+        case Some(message) => requests.singleIgnore(message)
+        case None => ()
+      })
+      .run()
+  }
+
 
   def processMessageCreated(message: Message): Option[CreateMessage] = {
     if (isMessageAUserUploadInStockUpdate(message)) {

@@ -14,7 +14,7 @@ object App {
 
     val messageProcessing = MessageProcessing(config)
 
-    DiscordHandler(config).runWith(messageProcessing)
+    DiscordHandler(config).queueRunWith(messageProcessing)
 
   }
 
