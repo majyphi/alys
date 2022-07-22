@@ -1,52 +1,23 @@
 package com.github.majestic.alys.processing
 
 import ackcord.data.Attachment
-import com.github.majestic.alys.Utils
-import com.github.majestic.alys.googlesheet.SheetHandler
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.stockreading.StockReader
-import com.github.majestic.alys.model.ItemStock
-import org.opencv.core.Mat
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.Try
+import com.github.majestic.alys.db.DatabaseHandler
 
 object ItemStocksProcessing {
 
-  def readStocksAndSendToSheet(attachment: Attachment, sheetName : String)(implicit imgLoader: ImgLoader, stockReader: StockReader, sheetHandler: SheetHandler): Try[Unit] = {
+  def readStocksAndSendToSheet(attachment: Attachment, stockName : String)(implicit imgLoader: ImgLoader, stockReader: StockReader, dbHandler: DatabaseHandler, executionContext: ExecutionContext): Try[Any] = {
     for {
-      img <- imgLoader.loadImageFromUrl(attachment.url)
-      stocks = stockReader.extractStocksFromImage(img)
-      refList <- sheetHandler.requestItemList(sheetName)
-      stocksToExport <- mergeLists(stocks, refList)
-      result <- sheetHandler.writeStocks(stocksToExport,sheetName)
+      img: Mat <- imgLoader.loadImageFromUrl(attachment.url)
+      stocks: Seq[Try[ItemStock]] = stockReader.extractStocksFromImage(img)
+      foundStocks: Seq[ItemStock] = stocks.flatMap(_.toOption)
+      result <- Try(Await.result(dbHandler.writeStocks(stockName, foundStocks),Duration(10,SECONDS)))
     } yield result
-  }
-
-  def mergeLists(stocks: List[Try[ItemStock]], refList: List[String]): Try[List[ItemStock]] = {
-    val foundStocks = stocks.filter(_.isSuccess).map(_.get)
-    foundStocks match {
-      case Seq() => Failure(new Exception("No Stock found ¯\\_(ツ)_/¯"))
-      case seq => Success {
-        val stocksMap = seq.map(item => (item.name, item.quantity)).toMap
-        refList.map(name => {
-          val value = stocksMap.getOrElse(name, 0)
-          ItemStock(name, value)
-        })
-      }
-    }
-  }
-
-  def readStocksFromAttachment(attachment: Attachment)(implicit imgLoader: ImgLoader, stockReader: StockReader): Try[String] = {
-    for {
-      img <- imgLoader.loadImageFromUrl(attachment.url)
-      stocks = stockReader.extractStocksFromImage(img)
-      result = formatAnswer(stocks)
-    } yield result
-  }
-
-  def formatAnswer(stocks: Seq[Try[ItemStock]]): String = {
-    val foundStocks = stocks.filter(_.isSuccess).map(_.get)
-    ItemStock.formatStocks(foundStocks.toList)
   }
 
 }

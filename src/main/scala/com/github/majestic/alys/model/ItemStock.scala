@@ -1,6 +1,8 @@
 package com.github.majestic.alys.model
 
-case class ItemStock(name: String, quantity: Int)
+case class ItemStock(name: String, quantity: Int) {
+  def tuple = (name,quantity)
+}
 
 object ItemStock {
 

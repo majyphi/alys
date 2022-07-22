@@ -1,6 +1,6 @@
 package com.github.majestic.alys.googlesheet
 
-import com.github.majestic.alys.ALysConfig
+import com.github.majestic.alys.{ALysConfig, GoogleSheetsConfig}
 import com.github.majestic.alys.model.ItemStock
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
@@ -73,7 +73,7 @@ object SheetHandler {
   val rangeItemNamesOf: String => String = (sheetName: String) => s"$sheetName!A:A"
   val rangeItemValuesOf: String => String = (sheetName: String) => s"$sheetName!B:B"
 
-  def apply(implicit config: ALysConfig): SheetHandler = {
+  def apply(implicit config: GoogleSheetsConfig): SheetHandler = {
     val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport
     val credentials = getCredentials(HTTP_TRANSPORT, config.googleCredentialsPath, config.googleTokenDirectory)
     val service: Sheets = new Sheets
