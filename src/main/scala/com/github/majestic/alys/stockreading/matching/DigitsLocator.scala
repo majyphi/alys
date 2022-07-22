@@ -1,14 +1,13 @@
 package com.github.majestic.alys.stockreading.matching
 
 import com.github.majestic.alys.{App, Utils}
+import com.github.majestic.alys.App
 import com.github.majestic.alys.model.ItemStock
 import com.github.majestic.alys.stockreading.imageloading.Digit
 import org.opencv.core._
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory
 
-import java.util
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object DigitsLocator {
@@ -28,7 +27,7 @@ object DigitsLocator {
     val foundDigits: List[DigitLocation] = digits
       .flatMap(locateAllInstancesOfDigit(itemValueImg))
 
-   itemValueImg.release
+    itemValueImg.release
 
     if (foundDigits.nonEmpty) {
       logger.debug(s"Found Digits : ${foundDigits}")
@@ -37,12 +36,11 @@ object DigitsLocator {
 
       val digitsLocationsToExclude = orderedDigits
         .sliding(2)
-        .toList
         .flatMap(getLowestScoreDigitWhenOverlap)
 
       val digitsToKeep = orderedDigits.filterNot(digitsLocationsToExclude.contains)
 
-        val value = digitsToKeep
+      val value = digitsToKeep
         .map(_.digitValue)
         .mkString
         .toInt
@@ -57,11 +55,11 @@ object DigitsLocator {
   }
 
   // Flags the low score digit when they are on the same place
-  def getLowestScoreDigitWhenOverlap(list : List[DigitLocation]): Option[DigitLocation] = {
+  def getLowestScoreDigitWhenOverlap(list: List[DigitLocation]): Option[DigitLocation] = {
     list match {
-      case List(left,right) =>
-        val limit = left.offset + (left.width/2)
-        if(right.offset < limit ){
+      case List(left, right) =>
+        val limit = left.offset + (left.width / 2)
+        if (right.offset < limit) {
           Some(list.minBy(_.score))
         } else {
           None
@@ -72,7 +70,7 @@ object DigitsLocator {
   }
 
 
-  def locateAllInstancesOfDigit(itemValueImg: ItemValueImg)(digit: Digit): List[DigitLocation] = {
+  def locateAllInstancesOfDigit(itemValueImg: ItemValueImg)(digit: Digit): Seq[DigitLocation] = {
     val tresholdForDigit = TresholdMap.getOrElse(digit.name,DefaultTreshold)
     val workImg = new Mat
     itemValueImg.img.copyTo(workImg)
@@ -84,42 +82,15 @@ object DigitsLocator {
     val matchResult = new Mat
     matchResult.create(resultRows, resultCols, CvType.CV_32F)
 
-    // WARN
-    // Side Effect on img. Handle with care
-    // opencv performance relies on mutating the same object in-memory
-    def hideFoundDigit(img: Mat, location: Point, template: Mat): Unit = {
-
-      val topLeft: Point = location
-      val topRight = new Point(topLeft.x + template.cols() - 1, topLeft.y)
-      val bottomRight = new Point(topLeft.x + template.cols() - 1, topLeft.y + template.rows())
-      val bottomLeft = new Point(topLeft.x, topLeft.y + template.rows())
-
-      val matOfPoint = new MatOfPoint(topLeft, topRight, bottomRight, bottomLeft)
-      val listOfMatOfPoint = new util.ArrayList[MatOfPoint]()
-      listOfMatOfPoint.add(matOfPoint)
-      Imgproc.fillPoly(img, listOfMatOfPoint, new Scalar(0, 0, 0))
-    }
-
-    @tailrec
-    def recursivelyFindAllPositions(accumlatedDigits: List[DigitLocation]): List[DigitLocation] = {
-      Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
-
-      val minMaxLocation = Core.minMaxLoc(matchResult)
-      if (minMaxLocation.maxVal < tresholdForDigit) {
-        accumlatedDigits
-      } else {
-        hideFoundDigit(workImg, minMaxLocation.maxLoc, template)
-        val offset = minMaxLocation.maxLoc.x.toInt
-        val digits = accumlatedDigits.+:(DigitLocation(digit.name, offset, template.cols(), minMaxLocation.maxVal))
-        recursivelyFindAllPositions(digits)
-      }
-
-    }
-
-    recursivelyFindAllPositions(List())
+    Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
+    for {
+      x: Int <- 0 until resultCols
+      y: Int <- 0 until resultRows
+      value: Double = matchResult.get(y,x)(0)
+      digitLocation = DigitLocation(digit.name, x, template.cols(), value) if value > tresholdForDigit
+    } yield digitLocation
 
   }
-
 
 
 }

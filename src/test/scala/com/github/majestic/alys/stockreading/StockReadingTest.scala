@@ -1,6 +1,6 @@
 package com.github.majestic.alys.stockreading
 
-import com.github.majestic.alys.{ALysConfig, model}
+import com.github.majestic.alys.{ALysConfig, DatabaseConfig, DiscordConfig, GoogleSheetsConfig, ImageProcessing, model}
 import com.github.majestic.alys.imgloading.ImgLoader
 import com.github.majestic.alys.model.ItemStock
 import org.scalatest.flatspec.AnyFlatSpec
@@ -9,17 +9,12 @@ import org.scalatest.matchers.should.Matchers
 
 class StockReadingTest extends AnyFlatSpec with Matchers {
 
-  val stocksReader = StockReader(ALysConfig(
-    "",
-    "",
-    "",
-    "resources/images/digits/",
-    "resources/images/icons/",
-    "",
-    "",
-    "",
-    ""
-  ))
+  val stocksReader = StockReader(
+    ImageProcessing(
+      "resources/images/digits/",
+      "resources/images/icons/"
+    )
+  )
 
   "StockReader" should "correctly read simple Warden stocks" in {
 
@@ -218,7 +213,7 @@ class StockReadingTest extends AnyFlatSpec with Matchers {
 
     val result = parsingResult.map(_.get)
 
-    result should contain (ItemStock("emat",300))
+    result should contain(ItemStock("emat", 300))
 
   }
 

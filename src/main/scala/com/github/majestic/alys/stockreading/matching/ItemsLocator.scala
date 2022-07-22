@@ -37,6 +37,7 @@ object ItemsLocator {
 
     Imgproc.matchTemplate(img, icon.template, matchResult, Imgproc.TM_CCORR_NORMED)
     val minMaxLocation = Core.minMaxLoc(matchResult)
+    matchResult.release()
     if (minMaxLocation.maxVal > detectionTreshold) {
       Some(ItemIconLocation(icon.name, minMaxLocation.maxVal, minMaxLocation.maxLoc))
     } else {
