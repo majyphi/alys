@@ -1,5 +1,6 @@
 package com.github.majestic.alys.stockreading.matching
 
+import com.github.majestic.alys.Utils
 import com.github.majestic.alys.model.ItemStock
 import com.github.majestic.alys.stockreading.imageloading.Digit
 import org.opencv.core._
@@ -12,7 +13,12 @@ import scala.util.{Failure, Success, Try}
 
 object DigitsLocator {
 
-  private val Treshold = 0.94
+  private val DefaultTreshold = 0.94
+
+  private val TresholdMap = Map(
+    "0" -> 0.9,
+    "1" -> 0.9
+  )
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -64,7 +70,7 @@ object DigitsLocator {
 
 
   def locateAllInstancesOfDigit(itemValueImg: ItemValueImg)(digit: Digit): List[DigitLocation] = {
-
+    val tresholdForDigit = TresholdMap.getOrElse(digit.name,DefaultTreshold)
     val workImg = new Mat
     itemValueImg.img.copyTo(workImg)
 
@@ -94,8 +100,9 @@ object DigitsLocator {
     @tailrec
     def recursivelyFindAllPositions(accumlatedDigits: List[DigitLocation]): List[DigitLocation] = {
       Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
+
       val minMaxLocation = Core.minMaxLoc(matchResult)
-      if (minMaxLocation.maxVal < Treshold) {
+      if (minMaxLocation.maxVal < tresholdForDigit) {
         accumlatedDigits
       } else {
         hideFoundDigit(workImg, minMaxLocation.maxLoc, template)

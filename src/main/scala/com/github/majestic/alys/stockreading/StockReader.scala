@@ -1,6 +1,6 @@
 package com.github.majestic.alys.stockreading
 
-import com.github.majestic.alys.ALysConfig
+import com.github.majestic.alys.{ALysConfig, Utils}
 import com.github.majestic.alys.stockreading.imageloading.{Digit, DigitsLoader, Icon, IconsLoader}
 import com.github.majestic.alys.stockreading.matching.{DigitsLocator, ItemIconLocation, ItemsLocator}
 import nu.pattern.OpenCV
@@ -32,7 +32,6 @@ case class StockReader(digits: List[Digit], icons: List[Icon]) {
   def extractStocksFromPath(path: String) = {
 
     val img = Imgcodecs.imread(path, Imgcodecs.IMREAD_GRAYSCALE)
-
     extractStocksFromImage(img)
   }
 
