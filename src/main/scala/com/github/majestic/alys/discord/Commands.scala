@@ -27,10 +27,31 @@ class DatabaseCommands(requests: Requests, dbHandler: DatabaseHandler, config: D
             dbHandler.createStock(stockName, stockGroup)
               .map {
                 case Success(_) => s"Created stock '$stockName' in group '$stockGroup'"
+                case Failure(t: Throwable) =>
+                  logger.error("Error during insertion of new stock", t)
+                  s":warning: An error was found when processing the query. I need my supervisor to come take a look: <@${config.adminUserID}>."
+              }
+          OptFuture.fromFuture(result)
+            .flatMap(msg => sendAsyncMessage(msg))
+        })
+      }
+
+  val deleteStock =
+    SlashCommand
+      .withParams(string("name", "The stockpile name to delete.").required)
+      .command("delete", "delete a stock") { implicit i =>
+        async(implicit token => {
+          val stockName = i.args
+          val result =
+            dbHandler
+              .deleteStock(stockName)
+              .map {
+                case Success(0) => s"'$stockName' not found. Not stock was deleted"
+                case Success(_) => s"Deleted stock '$stockName'"
                 case Failure(e: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException) => s"Stock '$stockName' already exists. Choose a different name"
-                case Failure(e: Exception) =>
-                  logger.error("Error during insertion of new stock", e)
-                  s":warning: An error was found when processing the image. I need my supervisor to come take a look: <@${config.adminUserID}>."
+                case Failure(t: Throwable) =>
+                  logger.error("Error during deletion of stock", t)
+                  s":warning: An error was found when processing the query. I need my supervisor to come take a look: <@${config.adminUserID}>."
               }
           OptFuture.fromFuture(result)
             .flatMap(msg => sendAsyncMessage(msg))
