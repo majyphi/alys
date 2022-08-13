@@ -8,9 +8,8 @@ import slick.jdbc.meta.MTable
 
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
-class DatabaseHandler(config : DatabaseConfig) {
+class DatabaseHandler(config: DatabaseConfig) {
 
 
   val dbName = "alys"
@@ -24,22 +23,26 @@ class DatabaseHandler(config : DatabaseConfig) {
     for {
       tables: Seq[MTable] <- db.run(MTable.getTables)
       tableNames = tables.map(_.name.name)
-      _ <- if(!tableNames.contains(stockpiles.baseTableRow.tableName)) db.run(createTables) else Future.unit
-    } yield()
+      _ <- if (!tableNames.contains(stockpiles.baseTableRow.tableName)) db.run(createTables) else Future.unit
+    } yield ()
   }
 
-  def createStock(stockName : String, stockGroup : String)  = {
-    db.run((stockpiles += (stockName,stockGroup)).asTry)
+  def createStock(stockName: String, stockGroup: String) = {
+    db.run((stockpiles += (stockName, stockGroup)).asTry)
   }
 
-  def getStocks()  = {
+  def deleteStock(stockName: String) = {
+    db.run(stockpiles.filter(_.stockName === stockName).delete.asTry)
+  }
+
+
+  def getStocks() = {
     db.run(stockpiles.result)
   }
 
-  def writeStocks(stockName : String, foundStocks: Seq[ItemStock]) = {
-    db.run((itemStocks ++= foundStocks.map(itemStock => (stockName,itemStock.name,itemStock.quantity))))
+  def writeStocks(stockName: String, foundStocks: Seq[ItemStock]) = {
+    db.run((itemStocks ++= foundStocks.map(itemStock => (stockName, itemStock.name, itemStock.quantity))))
   }
-
 
 
 }

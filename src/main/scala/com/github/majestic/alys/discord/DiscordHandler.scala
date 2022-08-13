@@ -49,6 +49,7 @@ case class DiscordHandler(client: DiscordClient, config: DiscordConfig) {
           // CreatedGuildCommand*
           dbCommands.pongCommand,
           dbCommands.createStock,
+          dbCommands.deleteStock,
           dbCommands.listStocks
         ).onComplete {
           case Success(result) => logger.info("Success!")
@@ -60,6 +61,7 @@ case class DiscordHandler(client: DiscordClient, config: DiscordConfig) {
       client.runGatewayCommands(msg.applicationId.asString)(
         dbCommands.pongCommand,
         dbCommands.createStock,
+        dbCommands.deleteStock,
         dbCommands.listStocks
       )
     }
