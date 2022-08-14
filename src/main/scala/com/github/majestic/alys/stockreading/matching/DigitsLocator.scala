@@ -1,6 +1,6 @@
 package com.github.majestic.alys.stockreading.matching
 
-import com.github.majestic.alys.Utils
+import com.github.majestic.alys.{App, Utils}
 import com.github.majestic.alys.model.ItemStock
 import com.github.majestic.alys.stockreading.imageloading.Digit
 import org.opencv.core._
@@ -17,7 +17,8 @@ object DigitsLocator {
 
   private val TresholdMap = Map(
     "0" -> 0.9,
-    "1" -> 0.9
+    "1" -> 0.9,
+    "6" -> 0.9
   )
 
   val logger = LoggerFactory.getLogger(this.getClass)
@@ -48,7 +49,9 @@ object DigitsLocator {
 
       Success(ItemStock(itemValueImg.itemName, value))
     } else {
-      Failure(new Exception(s"Could not parse any digits on ${itemValueImg.itemName}"))
+      val e = new Exception(s"Could not parse any digits on ${itemValueImg.itemName}")
+      App.logger.error("Error when parsing digits",e)
+      Failure(e)
     }
 
   }

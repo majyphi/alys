@@ -1,12 +1,14 @@
 package com.github.majestic.alys.stockreading
 
-import com.github.majestic.alys.{ALysConfig, Utils}
+import com.github.majestic.alys.{ALysConfig, App, Utils}
 import com.github.majestic.alys.stockreading.imageloading.{Digit, DigitsLoader, Icon, IconsLoader}
 import com.github.majestic.alys.stockreading.matching.{DigitsLocator, ItemIconLocation, ItemsLocator}
 import nu.pattern.OpenCV
 import org.opencv.core.{Mat, Size}
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+
+import scala.util.{Failure, Success}
 
 
 case class StockReader(digits: List[Digit], icons: List[Icon]) {
@@ -22,6 +24,7 @@ case class StockReader(digits: List[Digit], icons: List[Icon]) {
     val result = foundItems.map(_.toItemValueLocation())
       .map(_.extractValueImg(resizedImage))
       .map(DigitsLocator.parseDigits(digits))
+
 
     resizedImage.release()
 
