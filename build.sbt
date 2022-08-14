@@ -3,7 +3,7 @@ import Keys._
 
 name := "aLys"
 
-version := "1.0"
+version := "2.0-snapshot"
 
 scalaVersion := "2.13.8"
 
