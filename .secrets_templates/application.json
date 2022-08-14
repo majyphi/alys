@@ -2,8 +2,10 @@
   "token" : "",
   "channel" : "836306356990246942",
   "self-id" : "",
+  "admin-user-id" : "",
   "google-credentials-path" : ".secrets/google_credentials.json",
   "digits-images-path" : "resources/images/digits/",
   "icons-images-path" : "resources/images/icons/",
-  "google-token-directory" : "tokens/"
+  "google-token-directory" : "tokens/",
+  "spreadsheet-id" : ""
 }

@@ -3,14 +3,14 @@ import Keys._
 
 name := "aLys"
 
-version := "0.3"
+version := "1.0"
 
 scalaVersion := "2.13.8"
 
 resolvers += Resolver.JCenterRepository
 
 
-libraryDependencies += "net.katsstuff" %% "ackcord" % "0.18.0" exclude ("com.sedmelluq","lavaplayer") //For high level API, includes all the other modules
+libraryDependencies += "net.katsstuff" %% "ackcord" % "0.18.1" exclude ("com.sedmelluq","lavaplayer") //For high level API, includes all the other modules
 // https://mvnrepository.com/artifact/org.openpnp/opencv
 libraryDependencies += "org.openpnp" % "opencv" % "4.5.1-2"
 
