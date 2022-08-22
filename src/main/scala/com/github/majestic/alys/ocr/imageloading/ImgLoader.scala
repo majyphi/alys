@@ -1,4 +1,4 @@
-package com.github.majestic.alys.imgloading
+package com.github.majestic.alys.ocr.imageloading
 
 import nu.pattern.OpenCV
 import org.opencv.core.{Mat, MatOfByte}

@@ -1,7 +1,7 @@
-package com.github.majestic.alys.stockreading
+package com.github.majestic.alys.ocr
 
-import com.github.majestic.alys.stockreading.imageloading.IconsLoader
-import com.github.majestic.alys.stockreading.matching.ItemsLocator
+import com.github.majestic.alys.ocr.stockreading.imageloading.IconsLoader
+import com.github.majestic.alys.ocr.stockreading.matching.ItemsLocator
 import nu.pattern.OpenCV
 import org.opencv.core.{Mat, Size}
 import org.opencv.imgcodecs.Imgcodecs

@@ -1,9 +1,8 @@
-package com.github.majestic.alys.stockreading.matching
+package com.github.majestic.alys.ocr.stockreading.matching
 
-import com.github.majestic.alys.{App, Utils}
 import com.github.majestic.alys.App
-import com.github.majestic.alys.model.ItemStock
-import com.github.majestic.alys.stockreading.imageloading.Digit
+import com.github.majestic.alys.ocr.model.ImageItemStock
+import com.github.majestic.alys.ocr.stockreading.imageloading.Digit
 import org.opencv.core._
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory
@@ -22,7 +21,7 @@ object DigitsLocator {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def parseDigits(digits: List[Digit])(itemValueImg: ItemValueImg): Try[ItemStock] = {
+  def parseDigits(digits: List[Digit])(itemValueImg: ItemValueImg): Try[ImageItemStock] = {
 
     val foundDigits: List[DigitLocation] = digits
       .flatMap(locateAllInstancesOfDigit(itemValueImg))
@@ -36,6 +35,7 @@ object DigitsLocator {
 
       val digitsLocationsToExclude = orderedDigits
         .sliding(2)
+        .toList
         .flatMap(getLowestScoreDigitWhenOverlap)
 
       val digitsToKeep = orderedDigits.filterNot(digitsLocationsToExclude.contains)
@@ -45,10 +45,10 @@ object DigitsLocator {
         .mkString
         .toInt
 
-      Success(ItemStock(itemValueImg.itemName, value))
+      Success(ImageItemStock(itemValueImg.itemName, value))
     } else {
       val e = new Exception(s"Could not parse any digits on ${itemValueImg.itemName}")
-      App.logger.error("Error when parsing digits",e)
+      App.logger.error("Error when parsing digits", e)
       Failure(e)
     }
 
@@ -70,8 +70,8 @@ object DigitsLocator {
   }
 
 
-  def locateAllInstancesOfDigit(itemValueImg: ItemValueImg)(digit: Digit): Seq[DigitLocation] = {
-    val tresholdForDigit = TresholdMap.getOrElse(digit.name,DefaultTreshold)
+  def locateAllInstancesOfDigit(itemValueImg: ItemValueImg)(digit: Digit): List[DigitLocation] = {
+    val tresholdForDigit = TresholdMap.getOrElse(digit.name, DefaultTreshold)
     val workImg = new Mat
     itemValueImg.img.copyTo(workImg)
 
@@ -83,12 +83,13 @@ object DigitsLocator {
     matchResult.create(resultRows, resultCols, CvType.CV_32F)
 
     Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
-    for {
+    (for {
       x: Int <- 0 until resultCols
       y: Int <- 0 until resultRows
-      value: Double = matchResult.get(y,x)(0)
+      value: Double = matchResult.get(y, x)(0)
       digitLocation = DigitLocation(digit.name, x, template.cols(), value) if value > tresholdForDigit
     } yield digitLocation
+      ).toList
 
   }
 

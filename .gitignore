@@ -3,7 +3,7 @@
 .bsp
 .idea
 .secrets
-.release
+.release*
 target
 tokens
 data

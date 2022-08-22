@@ -1,7 +1,7 @@
-package com.github.majestic.alys.stockreading.matching
+package com.github.majestic.alys.ocr.stockreading.matching
 
-import com.github.majestic.alys.stockreading.imageloading.Icon
-import com.github.majestic.alys.stockreading.matching.ItemsLocator.{itemHeight, itemWidth}
+import com.github.majestic.alys.ocr.stockreading.imageloading.Icon
+import ItemsLocator.{itemHeight, itemWidth}
 import org.opencv.core.{Core, CvType, Mat, Point}
 import org.opencv.imgproc.Imgproc
 import org.slf4j.LoggerFactory

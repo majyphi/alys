@@ -1,4 +1,4 @@
-package com.github.majestic.alys.stockreading.imageloading
+package com.github.majestic.alys.ocr.stockreading.imageloading
 
 import org.opencv.core.Mat
 import org.opencv.imgcodecs.Imgcodecs

@@ -17,7 +17,6 @@ object Configuration {
 
 case class ALysConfig(imageProcessing: ImageProcessing,
                       discord: DiscordConfig,
-                      sheets: GoogleSheetsConfig,
                       db : DatabaseConfig
                      )
 
@@ -25,14 +24,12 @@ case class ImageProcessing(digitsImagesPath: String,
                            iconsImagesPath: String)
 
 case class DiscordConfig(token: String,
+                         guildId : String,
                          channel: String,
                          selfID: String,
-                         adminUserID: String
+                         adminUserID: String,
+                         adminRoles : Array[String]
                         )
 
-case class GoogleSheetsConfig(googleCredentialsPath: String,
-                              googleTokenDirectory: String,
-                              spreadsheetID: String)
-
-case class DatabaseConfig(dataPath : String)
+case class DatabaseConfig(dataPath : String, refPath : String)
 

@@ -1,24 +1,23 @@
 package com.github.majestic.alys.discord
 
-import ackcord.data.{ApplicationCommand, GuildId}
+import ackcord.data.GuildId
 import ackcord.gateway.GatewaySettings
 import ackcord.interactions.InteractionsRegistrar
-import ackcord.interactions.commands._
-import ackcord.{APIMessage, BotAuthentication, CacheSettings, ClientSettings, DiscordClient, DiscordShard, Events, OptFuture, RequestSettings, Requests}
+import ackcord.{APIMessage, BotAuthentication, CacheSettings, ClientSettings, DiscordClient, DiscordShard, Events, RequestSettings, Requests}
 import com.github.majestic.alys.App.logger
+import com.github.majestic.alys.DiscordConfig
+import com.github.majestic.alys.commands.{AlysCommands, ItemCommands, ObjectiveCommands, StockpileCommands}
 import com.github.majestic.alys.db.DatabaseHandler
-import com.github.majestic.alys.{ALysConfig, DiscordConfig}
-import com.github.majestic.alys.processing.ScreenshotProcessing
+import com.github.majestic.alys.ocr.ScreenshotHandler
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 
-
 case class DiscordHandler(client: DiscordClient, config: DiscordConfig) {
 
-  def runWith(messageProcessing: ScreenshotProcessing, dbHandler : DatabaseHandler): Unit = {
+  def runWith(messageProcessing: ScreenshotHandler, dbHandler: DatabaseHandler): Unit = {
 
     import ackcord.requests.{Ratelimiter, RatelimiterActor, RequestSettings}
     import akka.actor.typed._
@@ -30,72 +29,61 @@ case class DiscordHandler(client: DiscordClient, config: DiscordConfig) {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.ignore, "AckCord")
     import system.executionContext
 
-    //    val cache =  Events.create()
-    //    val ratelimitActor = system.systemActorOf(RatelimiterActor(), "Ratelimiter")
+    val cache = Events.create()
+    val ratelimitActor = system.systemActorOf(RatelimiterActor(), "Ratelimiter")
+    val guildID = GuildId(config.guildId)
 
-    val dbCommands = new DatabaseCommands(client.requests,dbHandler, config)
-
-    val guildID = GuildId("859088476468150302")
+    val allCommands = new AlysCommands(client, dbHandler, config).commands
 
     client.onEventSideEffectsIgnore {
       case msg: APIMessage.Ready =>
-        // Create the commands in a specific discord.
         logger.info("Ready. Registering Commands")
         InteractionsRegistrar.createGuildCommands(
-          msg.applicationId, // Client ID
-          guildID, // Guild ID
+          msg.applicationId,
+          guildID,
           client.requests,
-          replaceAll = true, // Boolean whether to replace all existing
-          // CreatedGuildCommand*
-          dbCommands.pongCommand,
-          dbCommands.createStock,
-          dbCommands.deleteStock,
-          dbCommands.listStocks
+          replaceAll = true,
+          commands = allCommands: _*
         ).onComplete {
-          case Success(result) => logger.info("Success!")
+          case Success(_) => logger.info("Success!")
           case Failure(e) => logger.error("Failure!", e)
         }
     }
 
     client.onEventSideEffectsIgnore { case msg: APIMessage.Ready =>
-      client.runGatewayCommands(msg.applicationId.asString)(
-        dbCommands.pongCommand,
-        dbCommands.createStock,
-        dbCommands.deleteStock,
-        dbCommands.listStocks
+      client.runGatewayCommands(msg.applicationId.toString)(
+        commands = allCommands: _*
       )
     }
 
+    implicit val requests: Requests = {
+      implicit val timeout: Timeout = 2.minutes //For the ratelimiter
+      new Requests(
+        RequestSettings(
+          Some(BotAuthentication(config.token)),
+          Ratelimiter.ofActor(ratelimitActor)
+        )
+      )
+    }
 
+    messageProcessing
+      .getGraphForStockUpload(cache, requests)
+      .run()
 
+    messageProcessing
+      .getBonjourGraph(cache, requests)
+      .run()
 
-    //    implicit val requests: Requests = {
-    //      implicit val timeout: Timeout = 2.minutes //For the ratelimiter
-    //      new Requests(
-    //        RequestSettings(
-    //          Some(BotAuthentication(config.token)),
-    //          Ratelimiter.ofActor(ratelimitActor)
-    //        )
-    //      )
-    //    }
-    //
-    //    messageProcessing
-    //      .getGraphForStockUpload(cache,requests)
-    //      .run()
-    //
-    //    val gatewaySettings = GatewaySettings(config.token)
-    //    DiscordShard.fetchWsGateway.foreach { wsUri =>
-    //      val shard = system.systemActorOf(DiscordShard(wsUri, gatewaySettings, cache), "DiscordShard")
-    //      shard ! DiscordShard.StartShard
-    //    }
-
+    val gatewaySettings = GatewaySettings(config.token)
+    DiscordShard.fetchWsGateway.foreach { wsUri =>
+      val shard = system.systemActorOf(DiscordShard(wsUri, gatewaySettings, cache), "DiscordShard")
+      shard ! DiscordShard.StartShard
+    }
     client.login()
-
 
   }
 
 }
-
 
 
 object DiscordHandler {

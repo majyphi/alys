@@ -2,7 +2,7 @@ package com.github.majestic.alys
 
 import com.github.majestic.alys.db.DatabaseHandler
 import com.github.majestic.alys.discord.DiscordHandler
-import com.github.majestic.alys.processing.ScreenshotProcessing
+import com.github.majestic.alys.ocr.ScreenshotHandler
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -18,9 +18,9 @@ object App {
     val config: ALysConfig = Configuration.getALysConfig(args(0))
 
     val dbHandler = new DatabaseHandler(config.db)
-    val result = Await.result(dbHandler.initDB, Duration(15, SECONDS))
+    Await.result(dbHandler.initDB, Duration(15, SECONDS))
 
-    val messageProcessing = ScreenshotProcessing(config, dbHandler)
+    val messageProcessing = ScreenshotHandler(config, dbHandler)
     DiscordHandler(config.discord).runWith(messageProcessing, dbHandler)
 
   }

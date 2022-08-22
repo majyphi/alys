@@ -1,24 +1,25 @@
-package com.github.majestic.alys.processing
+package com.github.majestic.alys.ocr
 
-import ackcord.data.Message
+import ackcord.data.{Attachment, Message, UserId}
 import ackcord.requests.{CreateMessage, CreateMessageData}
 import ackcord.{APIMessage, Cache, Requests}
 import akka.NotUsed
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, RunnableGraph, Sink}
-import com.github.majestic.alys.{ALysConfig, DiscordConfig}
 import com.github.majestic.alys.App.logger
 import com.github.majestic.alys.db.DatabaseHandler
-import com.github.majestic.alys.exceptions.StockNameException
-import com.github.majestic.alys.googlesheet.SheetHandler
-import com.github.majestic.alys.imgloading.ImgLoader
-import com.github.majestic.alys.stockreading.StockReader
+import com.github.majestic.alys.ocr.exceptions.StockNameException
+import com.github.majestic.alys.ocr.imageloading.ImgLoader
+import com.github.majestic.alys.ocr.model.ImageItemStock
+import com.github.majestic.alys.ocr.stockreading.StockReader
+import com.github.majestic.alys.{ALysConfig, DiscordConfig}
+import org.opencv.core.Mat
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 
-class ScreenshotProcessing(implicit imgLoader: ImgLoader, stockReader: StockReader, config: DiscordConfig, dbHandler: DatabaseHandler) {
+class ScreenshotHandler(implicit imgLoader: ImgLoader, stockReader: StockReader, config: DiscordConfig, dbHandler: DatabaseHandler) {
 
   def getGraphForStockUpload(events: Cache, requests: Requests)(implicit executionContext: ExecutionContext): RunnableGraph[NotUsed] = {
     events
@@ -32,13 +33,23 @@ class ScreenshotProcessing(implicit imgLoader: ImgLoader, stockReader: StockRead
 
   }
 
-  def processImage(message: Message)(implicit executionContext: ExecutionContext): CreateMessage = {
-    logger.info("Begin processing: " + message.id.asString)
+  def getBonjourGraph(events: Cache, requests: Requests)(implicit executionContext: ExecutionContext): RunnableGraph[NotUsed] = {
+    events
+      .subscribeAPI
+      .collectType[APIMessage.MessageCreate]
+      .map(_.message)
+      .filter(msg => msg.mentions.contains(UserId(config.selfID)) && msg.authorUserId.isDefined)
+      .to(Sink.foreach[Message](msg => requests.singleIgnore(CreateMessage(msg.channelId,CreateMessageData(f"Bonjour <@${msg.authorUserId.get}> !")))))
 
-    val stockNamesList = Await.result(dbHandler.getStocks(), Duration(10, SECONDS)).map(_._1)
+  }
+
+  def processImage(message: Message)(implicit executionContext: ExecutionContext): CreateMessage = {
+    logger.info("Begin processing: " + message.id)
+
+    val stockNamesList = Await.result(dbHandler.getStockpileList, Duration(10, SECONDS)).map(_.stockpileName)
     val stocksProcessingAttempt: Try[Any] = for {
       stockName : String <- getStockName(message, stockNamesList)
-      res <- ItemStocksProcessing.readStocksAndSendToSheet(message.attachments.head, stockName)
+      res <- readStocksAndSendToDB(message.attachments.head, stockName)
     } yield res
 
     val answerMessage = stocksProcessingAttempt match {
@@ -54,13 +65,13 @@ class ScreenshotProcessing(implicit imgLoader: ImgLoader, stockReader: StockRead
              |${e.getMessage}
              |""".stripMargin)
     }
-    logger.info("End processing: " + message.id.asString)
+    logger.info("End processing: " + message.id)
 
     CreateMessage(message.channelId, answerMessage.copy(replyTo = Some(message.id)))
   }
 
   private def isMessageAUserUploadInStockUpdate(message: Message): Boolean = {
-    message.channelId.asString == config.channel &&
+    message.channelId.toString == config.channel &&
       !message.authorUserId.map(_.toString).contains(config.selfID) &&
       message.attachments.nonEmpty
   }
@@ -75,16 +86,27 @@ class ScreenshotProcessing(implicit imgLoader: ImgLoader, stockReader: StockRead
     }
   }
 
+  def readStocksAndSendToDB(attachment: Attachment, stockName: String)(implicit executionContext: ExecutionContext): Try[Any] = {
+    for {
+      img: Mat <- imgLoader.loadImageFromUrl(attachment.url)
+      stocks: Seq[Try[ImageItemStock]] = stockReader.extractStocksFromImage(img)
+      foundStocks: Seq[ImageItemStock] = stocks.flatMap(_.toOption)
+      result <- Try(Await.result(dbHandler.writeItems(stockName, foundStocks), Duration(10, SECONDS)))
+    } yield result
+  }
+
 
 }
 
-object ScreenshotProcessing {
+object ScreenshotHandler {
 
 
-  def apply(config: ALysConfig, dbHandler: DatabaseHandler): ScreenshotProcessing = {
+
+  def apply(config: ALysConfig, dbHandler: DatabaseHandler): ScreenshotHandler = {
     val imgLoader = ImgLoader()
     val stockReader = StockReader(config.imageProcessing)
-    new ScreenshotProcessing()(imgLoader, stockReader, config.discord, dbHandler)
+    new ScreenshotHandler()(imgLoader, stockReader, config.discord, dbHandler)
   }
+
 
 }

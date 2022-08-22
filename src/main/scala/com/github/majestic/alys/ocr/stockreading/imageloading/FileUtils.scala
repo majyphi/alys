@@ -1,4 +1,4 @@
-package com.github.majestic.alys.stockreading.imageloading
+package com.github.majestic.alys.ocr.stockreading.imageloading
 
 import java.io.File
 
