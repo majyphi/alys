@@ -1,32 +1,25 @@
 package com.github.majestic.alys.stockreading
 
-import com.github.majestic.alys.{ALysConfig, App, Utils}
+import com.github.majestic.alys.ALysConfig
 import com.github.majestic.alys.stockreading.imageloading.{Digit, DigitsLoader, Icon, IconsLoader}
-import com.github.majestic.alys.stockreading.matching.{DigitsLocator, ItemIconLocation, ItemsLocator}
+import com.github.majestic.alys.stockreading.matching.{DigitsLocator, ItemsLocator}
 import nu.pattern.OpenCV
-import org.opencv.core.{Mat, Size}
+import org.opencv.core.Mat
 import org.opencv.imgcodecs.Imgcodecs
-import org.opencv.imgproc.Imgproc
-
-import scala.util.{Failure, Success}
 
 
 case class StockReader(digits: List[Digit], icons: List[Icon]) {
 
   def extractStocksFromImage(img: Mat) = {
 
-    val resizedImage = new Mat()
-    Imgproc.resize(img, resizedImage, new Size(1920, 1080))
-    img.release()
 
-    val foundItems = ItemsLocator.identifyItemsFromIcons(icons,resizedImage)
+    val foundItems = ItemsLocator.identifyItemsFromIcons(icons,img)
 
     val result = foundItems.map(_.toItemValueLocation())
-      .map(_.extractValueImg(resizedImage))
+      .map(_.extractValueImg(img))
       .map(DigitsLocator.parseDigits(digits))
 
-
-    resizedImage.release()
+    img.release()
 
     result
 

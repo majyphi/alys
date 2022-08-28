@@ -84,42 +84,16 @@ object DigitsLocator {
     val matchResult = new Mat
     matchResult.create(resultRows, resultCols, CvType.CV_32F)
 
-    // WARN
-    // Side Effect on img. Handle with care
-    // opencv performance relies on mutating the same object in-memory
-    def hideFoundDigit(img: Mat, location: Point, template: Mat): Unit = {
-
-      val topLeft: Point = location
-      val topRight = new Point(topLeft.x + template.cols() - 1, topLeft.y)
-      val bottomRight = new Point(topLeft.x + template.cols() - 1, topLeft.y + template.rows())
-      val bottomLeft = new Point(topLeft.x, topLeft.y + template.rows())
-
-      val matOfPoint = new MatOfPoint(topLeft, topRight, bottomRight, bottomLeft)
-      val listOfMatOfPoint = new util.ArrayList[MatOfPoint]()
-      listOfMatOfPoint.add(matOfPoint)
-      Imgproc.fillPoly(img, listOfMatOfPoint, new Scalar(0, 0, 0))
-    }
-
-    @tailrec
-    def recursivelyFindAllPositions(accumlatedDigits: List[DigitLocation]): List[DigitLocation] = {
-      Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
-
-      val minMaxLocation = Core.minMaxLoc(matchResult)
-      if (minMaxLocation.maxVal < tresholdForDigit) {
-        accumlatedDigits
-      } else {
-        hideFoundDigit(workImg, minMaxLocation.maxLoc, template)
-        val offset = minMaxLocation.maxLoc.x.toInt
-        val digits = accumlatedDigits.+:(DigitLocation(digit.name, offset, template.cols(), minMaxLocation.maxVal))
-        recursivelyFindAllPositions(digits)
-      }
-
-    }
-
-    recursivelyFindAllPositions(List())
+    Imgproc.matchTemplate(workImg, digit.template, matchResult, Imgproc.TM_CCORR_NORMED)
+    (for {
+      x: Int <- 0 until resultCols
+      y: Int <- 0 until resultRows
+      value: Double = matchResult.get(y,x)(0)
+      digitLocation = DigitLocation(digit.name, x, template.cols(), value) if value > tresholdForDigit
+    } yield digitLocation
+    ).toList
 
   }
-
 
 
 }
